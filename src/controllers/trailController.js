@@ -6,9 +6,12 @@ class TrailController {
   // Create a new trail
   static async createTrail(req, res) {
     try {
+      console.log('🆕 Creating trail with data:', req.body);
+      
       // Validate request body
       const { error, value } = createTrailSchema.validate(req.body);
       if (error) {
+        console.log('❌ Joi validation error:', error.details);
         return res.status(400).json({
           success: false,
           message: 'Validation error',
@@ -19,6 +22,7 @@ class TrailController {
       // Additional validation using Trail model
       const validationErrors = Trail.validate(value);
       if (validationErrors.length > 0) {
+        console.log('❌ Trail model validation error:', validationErrors);
         return res.status(400).json({
           success: false,
           message: 'Validation error',
@@ -26,7 +30,10 @@ class TrailController {
         });
       }
 
+      console.log('✅ Validation passed, connecting to database...');
       const db = getDB();
+      console.log('✅ Database connection established');
+      
       const trail = new Trail(value);
       
       // Add timestamps
@@ -34,11 +41,17 @@ class TrailController {
       trail.lastUpdated = new Date();
 
       // Save to Firestore
-      const docRef = await db.collection('trails').add(trail.toFirestore());
+      console.log('💾 Saving trail to Firestore...');
+      const trailData = trail.toFirestore();
+      console.log('📝 Trail data to save:', trailData);
+      
+      const docRef = await db.collection('Trails').add(trailData);
+      console.log('✅ Trail saved with ID:', docRef.id);
       
       // Get the created document
       const createdDoc = await docRef.get();
       const createdTrail = Trail.fromFirestore(createdDoc);
+      console.log('✅ Trail retrieved from database');
       
       res.status(201).json({
         success: true,
@@ -61,9 +74,12 @@ class TrailController {
   // Get all trails with pagination and filtering
   static async getTrails(req, res) {
     try {
+      console.log('🔍 Getting trails with query:', req.query);
+      
       // Validate query parameters
       const { error, value } = querySchema.validate(req.query);
       if (error) {
+        console.log('❌ Query validation error:', error.details);
         return res.status(400).json({
           success: false,
           message: 'Invalid query parameters',
@@ -71,8 +87,11 @@ class TrailController {
         });
       }
 
+      console.log('✅ Validated query parameters:', value);
       const db = getDB();
-      let query = db.collection('trails');
+      console.log('✅ Database connection established');
+      
+      let query = db.collection('Trails');
 
       // Apply filters
       if (value.difficulty) {
@@ -104,10 +123,44 @@ class TrailController {
         query = query.where('elevationGain', '<=', value.maxElevation);
       }
 
-      // Apply sorting
+      // Apply sorting (with smart index management)
       const sortField = value.sort;
       const sortOrder = value.order === 'asc' ? 'asc' : 'desc';
-      query = query.orderBy(sortField, sortOrder);
+      
+      // Check what filters are applied
+      const hasDifficultyFilter = value.difficulty;
+      const hasStatusFilter = value.status;
+      const hasTagsFilter = value.tags;
+      const hasRangeFilters = value.minDistance !== undefined || value.maxDistance !== undefined ||
+                             value.minElevation !== undefined || value.maxElevation !== undefined;
+      
+      // Determine if we can use the requested sort or need to fallback
+      let canUseRequestedSort = true;
+      
+      if (hasDifficultyFilter && sortField !== 'createdAt') {
+        canUseRequestedSort = false; // Needs composite index: difficulty + sortField
+      }
+      
+      if (hasStatusFilter && sortField !== 'createdAt') {
+        canUseRequestedSort = false; // Needs composite index: status + sortField
+      }
+      
+      if (hasTagsFilter && sortField !== 'createdAt') {
+        canUseRequestedSort = false; // Needs composite index: tags + sortField
+      }
+      
+      if (hasRangeFilters && sortField !== 'createdAt') {
+        canUseRequestedSort = false; // Needs composite index: range + sortField
+      }
+      
+      if (canUseRequestedSort) {
+        query = query.orderBy(sortField, sortOrder);
+        console.log(`✅ Using requested sort: ${sortField} ${sortOrder}`);
+      } else {
+        // Fallback to createdAt which should have a single-field index
+        query = query.orderBy('createdAt', 'desc');
+        console.log(`⚠️ Fallback to createdAt sort (index required for ${sortField} with filters)`);
+      }
 
       // Apply pagination
       const page = value.page;
@@ -124,7 +177,22 @@ class TrailController {
       query = query.limit(limit);
 
       // Execute query
-      const snapshot = await query.get();
+      console.log('🔍 Executing Firestore query...');
+      let snapshot;
+      try {
+        snapshot = await query.get();
+        console.log(`✅ Query executed. Found ${snapshot.size} documents`);
+      } catch (error) {
+        if (error.code === 'FAILED_PRECONDITION' && error.message.includes('index')) {
+          console.log('⚠️ Index required, falling back to simple query...');
+          // Fallback to simple query without filters
+          const simpleQuery = db.collection('Trails').orderBy('createdAt', 'desc').limit(value.limit);
+          snapshot = await simpleQuery.get();
+          console.log(`✅ Fallback query executed. Found ${snapshot.size} documents`);
+        } else {
+          throw error;
+        }
+      }
       
       // Process results
       const trails = [];
@@ -137,9 +205,11 @@ class TrailController {
       });
 
       // Get total count for pagination info
-      const countQuery = db.collection('trails');
+      console.log('🔍 Getting total count...');
+      const countQuery = db.collection('Trails');
       const countSnapshot = await countQuery.get();
       const total = countSnapshot.size;
+      console.log(`✅ Total trails in database: ${total}`);
 
       res.json({
         success: true,
@@ -167,7 +237,7 @@ class TrailController {
       const { id } = req.params;
       const db = getDB();
       
-      const doc = await db.collection('trails').doc(id).get();
+      const doc = await db.collection('Trails').doc(id).get();
       
       if (!doc.exists) {
         return res.status(404).json({
@@ -211,7 +281,7 @@ class TrailController {
       }
 
       const db = getDB();
-      const docRef = db.collection('trails').doc(id);
+      const docRef = db.collection('Trails').doc(id);
       
       // Check if trail exists
       const doc = await docRef.get();
@@ -273,7 +343,7 @@ class TrailController {
       const { id } = req.params;
       const db = getDB();
       
-      const docRef = db.collection('trails').doc(id);
+      const docRef = db.collection('Trails').doc(id);
       
       // Check if trail exists
       const doc = await docRef.get();
@@ -317,7 +387,7 @@ class TrailController {
       const db = getDB();
       
       // Get all trails (Firestore doesn't have native geospatial queries)
-      const snapshot = await db.collection('trails')
+      const snapshot = await db.collection('Trails')
         .where('status', '==', 'open')
         .get();
       
@@ -384,7 +454,7 @@ class TrailController {
       }
 
       const db = getDB();
-      let query = db.collection('trails');
+      let query = db.collection('Trails');
       
       // Apply filters
       if (difficulty) {

@@ -91,13 +91,21 @@ A comprehensive CRUD API for managing hiking trails with geolocation support, bu
    npm start
    ```
 
+## 🚀 Live API
+
+Your API is now live at: **https://orion-api-qeyv.onrender.com**
+
+- **Health Check:** https://orion-api-qeyv.onrender.com/health
+- **API Documentation:** https://orion-api-qeyv.onrender.com/api-docs
+- **Create Trail:** https://orion-api-qeyv.onrender.com/api/trails
+
 ## API Endpoints
 
 ### Trails
 
 #### Create a Trail
 ```http
-POST /api/trails
+POST https://orion-api-qeyv.onrender.com/api/trails
 Content-Type: application/json
 
 {
@@ -123,7 +131,7 @@ Content-Type: application/json
 
 #### Get All Trails
 ```http
-GET /api/trails?page=1&limit=10&difficulty=Moderate&status=open
+GET https://orion-api-qeyv.onrender.com/api/trails?page=1&limit=10&difficulty=Moderate&status=open
 ```
 
 **Query Parameters:**
@@ -141,12 +149,12 @@ GET /api/trails?page=1&limit=10&difficulty=Moderate&status=open
 
 #### Get Trail by ID
 ```http
-GET /api/trails/{trailId}
+GET https://orion-api-qeyv.onrender.com/api/trails/{trailId}
 ```
 
 #### Update Trail
 ```http
-PUT /api/trails/{trailId}
+PUT https://orion-api-qeyv.onrender.com/api/trails/{trailId}
 Content-Type: application/json
 
 {
@@ -157,12 +165,12 @@ Content-Type: application/json
 
 #### Delete Trail
 ```http
-DELETE /api/trails/{trailId}
+DELETE https://orion-api-qeyv.onrender.com/api/trails/{trailId}
 ```
 
 #### Search Trails by Text
 ```http
-GET /api/trails/search?q=mountain&difficulty=Moderate&tags=forest,views
+GET https://orion-api-qeyv.onrender.com/api/trails/search?q=mountain&difficulty=Moderate&tags=forest,views
 ```
 
 **Query Parameters:**
@@ -173,7 +181,7 @@ GET /api/trails/search?q=mountain&difficulty=Moderate&tags=forest,views
 
 #### Search Trails Near Location
 ```http
-GET /api/trails/near?latitude=40.7128&longitude=-74.0060&maxDistance=10000&page=1&limit=10
+GET https://orion-api-qeyv.onrender.com/api/trails/near?latitude=40.7128&longitude=-74.0060&maxDistance=10000&page=1&limit=10
 ```
 
 **Query Parameters:**
@@ -240,6 +248,45 @@ The API implements rate limiting:
 - **Input Validation**: Comprehensive validation using Joi
 - **Error Handling**: Secure error messages (no sensitive data leaked)
 
+## 🧪 Testing Your Live API
+
+### **Test with curl:**
+```bash
+# Health check
+curl https://orion-api-qeyv.onrender.com/health
+
+# Create a trail
+curl -X POST https://orion-api-qeyv.onrender.com/api/trails \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Live Test Trail",
+    "location": {"latitude": 40.7128, "longitude": -74.0060},
+    "distance": 3.5,
+    "elevationGain": 500,
+    "difficulty": "Easy",
+    "description": "Testing my live API!",
+    "createdBy": "live-test-user"
+  }'
+
+# Get all trails
+curl https://orion-api-qeyv.onrender.com/api/trails
+
+# Search trails
+curl "https://orion-api-qeyv.onrender.com/api/trails/search?q=mountain"
+
+# Find trails near location
+curl "https://orion-api-qeyv.onrender.com/api/trails/near?latitude=40.7128&longitude=-74.0060&maxDistance=10000"
+```
+
+### **Test in Browser:**
+- **Health Check:** https://orion-api-qeyv.onrender.com/health
+- **API Documentation:** https://orion-api-qeyv.onrender.com/api-docs
+
+### **Test with Postman:**
+1. Import this collection URL: `https://orion-api-qeyv.onrender.com/api-docs`
+2. Set base URL to: `https://orion-api-qeyv.onrender.com`
+3. Test all endpoints
+
 ## Development
 
 ### Scripts
@@ -289,15 +336,26 @@ src/
    rules_version = '2';
    service cloud.firestore {
      match /databases/{database}/documents {
-       match /trails/{document} {
+       match /Trails/{document} {
          allow read, write: if true; // Adjust based on your needs
        }
-       match /users/{document} {
+       match /Users/{document} {
          allow read, write: if true; // Adjust based on your needs
        }
      }
    }
    ```
+
+5. **Create Required Indexes** (if you get index errors):
+   - Go to [Firebase Console](https://console.firebase.google.com/) → Firestore Database → Indexes
+   - Create composite indexes for complex queries:
+     - Collection: `Trails`
+     - Fields: `status` (Ascending), `createdAt` (Ascending)
+     - Fields: `difficulty` (Ascending), `createdAt` (Ascending)
+     - Fields: `status` (Ascending), `difficulty` (Ascending), `createdAt` (Ascending)
+     - Fields: `tags` (Arrays), `createdAt` (Ascending)
+   - Or click the link provided in error messages to auto-create indexes
+   - **Note:** The API will work without indexes but with limited filtering capabilities
 
 ## Contributing
 

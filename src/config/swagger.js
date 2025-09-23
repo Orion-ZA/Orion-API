@@ -22,10 +22,46 @@ const options = {
         description: 'Development server'
       },
       {
-        url: 'https://your-app-name.railway.app',
+        url: 'https://orion-api-qeyv.onrender.com',
         description: 'Production server'
       }
     ],
+    tags: [
+      {
+        name: 'Health',
+        description: 'Health check endpoints'
+      },
+      {
+        name: 'Trails',
+        description: 'Trail management endpoints'
+      }
+    ],
+    paths: {
+      '/health': {
+        get: {
+          summary: 'Health check endpoint',
+          description: 'Check if the API service is running and healthy',
+          tags: ['Health'],
+          responses: {
+            '200': {
+              description: 'Service is healthy',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/HealthResponse'
+                  },
+                  example: {
+                    status: 'OK',
+                    timestamp: '2024-01-15T10:30:00.000Z',
+                    uptime: 123.456
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     components: {
       schemas: {
         GeoPoint: {
@@ -221,16 +257,19 @@ const options = {
           properties: {
             status: {
               type: 'string',
-              example: 'OK'
+              example: 'OK',
+              description: 'Service health status'
             },
             timestamp: {
               type: 'string',
               format: 'date-time',
-              example: '2024-01-15T10:30:00.000Z'
+              example: '2024-01-15T10:30:00.000Z',
+              description: 'Current server timestamp'
             },
             uptime: {
               type: 'number',
-              example: 123.456
+              example: 123.456,
+              description: 'Server uptime in seconds'
             }
           }
         }

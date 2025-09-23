@@ -22,7 +22,7 @@ const connectDB = async () => {
     db = admin.firestore();
     
     // Test connection
-    await db.collection('_health').doc('test').get();
+    await db.collection('Trails').limit(1).get();
     
     console.log('🔥 Firebase Firestore Connected');
   } catch (error) {

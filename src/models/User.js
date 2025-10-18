@@ -5,7 +5,7 @@ class User {
     this.profileInfo = data.profileInfo || {};
     this.submittedTrails = data.submittedTrails || [];
     this.favourites = data.favourites || [];
-    this.completedHikes = data.completedHikes || [];
+    this.completed = data.completed || [];
     this.wishlist = data.wishlist || [];
   }
 
@@ -67,8 +67,8 @@ class User {
       errors.push(...this.validateTrailReferences(userData.favourites, 'favourites'));
     }
     
-    if (userData.completedHikes) {
-      errors.push(...this.validateTrailReferences(userData.completedHikes, 'completedHikes'));
+    if (userData.completed) {
+      errors.push(...this.validateTrailReferences(userData.completed, 'completed'));
     }
     
     if (userData.wishlist) {
@@ -98,10 +98,15 @@ class User {
   }
 
   // Helper method to add a completed hike
-  addCompletedHike(trailId) {
-    if (!this.completedHikes.includes(trailId)) {
-      this.completedHikes.push(trailId);
+  addCompleted(trailId) {
+    if (!this.completed.includes(trailId)) {
+      this.completed.push(trailId);
     }
+  }
+
+  // Helper method to remove from completed
+  removeCompleted(trailId) {
+    this.completed = this.completed.filter(id => id !== trailId);
   }
 
   // Helper method to add to wishlist
@@ -122,7 +127,7 @@ class User {
       profileInfo: this.profileInfo,
       submittedTrails: this.submittedTrails,
       favourites: this.favourites,
-      completedHikes: this.completedHikes,
+      completed: this.completed,
       wishlist: this.wishlist
     };
   }

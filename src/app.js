@@ -8,6 +8,10 @@ require('dotenv').config();
 
 const { connectDB } = require('./config/database');
 const trailRoutes = require('./routes/trailRoutes');
+const userRoutes = require('./routes/userRoutes');
+const alertRoutes = require('./routes/alertRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const swaggerSpecs = require('./config/swagger');
 const swaggerUi = require('swagger-ui-express');
@@ -171,6 +175,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
 
 // API routes
 app.use('/api/trails', trailRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/alerts', alertRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/reports', reportRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

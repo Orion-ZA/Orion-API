@@ -18,10 +18,6 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:3000',
-        description: 'Development server'
-      },
-      {
         url: 'https://orion-api-qeyv.onrender.com',
         description: 'Production server'
       }
@@ -34,6 +30,22 @@ const options = {
       {
         name: 'Trails',
         description: 'Trail management endpoints'
+      },
+      {
+        name: 'Users',
+        description: 'User management and trail interactions'
+      },
+      {
+        name: 'Alerts',
+        description: 'Trail alert management'
+      },
+      {
+        name: 'Reviews',
+        description: 'Trail review management'
+      },
+      {
+        name: 'Reports',
+        description: 'Content reporting and moderation'
       }
     ],
     paths: {
@@ -270,6 +282,290 @@ const options = {
               type: 'number',
               example: 123.456,
               description: 'Server uptime in seconds'
+            }
+          }
+        },
+        User: {
+          type: 'object',
+          properties: {
+            profileInfo: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'User full name'
+                },
+                email: {
+                  type: 'string',
+                  format: 'email',
+                  description: 'User email address'
+                },
+                joinedDate: {
+                  type: 'string',
+                  format: 'date-time',
+                  description: 'When user joined'
+                }
+              }
+            },
+            submittedTrails: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array of trail IDs submitted by user'
+            },
+            favourites: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array of favorite trail IDs'
+            },
+            completed: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array of completed trail IDs'
+            },
+            wishlist: {
+              type: 'array',
+              items: {
+                type: 'string'
+              },
+              description: 'Array of trail IDs in wishlist'
+            }
+          }
+        },
+        UserResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true
+            },
+            data: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  description: 'User document ID'
+                }
+              },
+              allOf: [
+                { $ref: '#/components/schemas/User' }
+              ]
+            }
+          }
+        },
+        Alert: {
+          type: 'object',
+          required: ['trailId', 'message', 'type'],
+          properties: {
+            trailId: {
+              type: 'string',
+              description: 'ID of the associated trail'
+            },
+            message: {
+              type: 'string',
+              description: 'Alert content/description'
+            },
+            type: {
+              type: 'string',
+              enum: ['community', 'authority', 'emergency'],
+              description: 'Type of alert'
+            },
+            comment: {
+              type: 'string',
+              description: 'Optional additional details'
+            },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the alert was created'
+            },
+            isActive: {
+              type: 'boolean',
+              default: true,
+              description: 'Whether the alert is currently active'
+            },
+            isTimed: {
+              type: 'boolean',
+              default: false,
+              description: 'Whether this is a timed alert with expiration'
+            },
+            expiresAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the alert expires (only present if isTimed is true)'
+            },
+            duration: {
+              type: 'integer',
+              description: 'Duration in minutes (used during creation but not stored)'
+            },
+            lastUpdated: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the alert was last updated'
+            }
+          }
+        },
+        Review: {
+          type: 'object',
+          required: ['id', 'userId', 'userName', 'rating', 'comment'],
+          properties: {
+            id: {
+              type: 'string',
+              description: 'Unique review ID'
+            },
+            userId: {
+              type: 'string',
+              description: 'Firebase Auth UID'
+            },
+            userName: {
+              type: 'string',
+              description: 'Display name or email, can be "Anonymous"'
+            },
+            userEmail: {
+              type: 'string',
+              format: 'email',
+              description: 'User email address for reference'
+            },
+            rating: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 5,
+              description: 'Rating from 1 to 5'
+            },
+            comment: {
+              type: 'string',
+              description: 'Review text content'
+            },
+            message: {
+              type: 'string',
+              description: 'Alternative field name for comment'
+            },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Review timestamp'
+            },
+            photos: {
+              type: 'array',
+              items: {
+                type: 'string',
+                format: 'uri'
+              },
+              description: 'Array of photo URLs'
+            },
+            lastUpdated: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the review was last updated'
+            }
+          }
+        },
+        Report: {
+          type: 'object',
+          required: ['type', 'category', 'description'],
+          properties: {
+            type: {
+              type: 'string',
+              enum: ['trail', 'review', 'image', 'alert', 'general'],
+              description: 'Type of report'
+            },
+            category: {
+              type: 'string',
+              description: 'Specific category based on report type'
+            },
+            description: {
+              type: 'string',
+              description: 'Detailed description of the issue being reported'
+            },
+            priority: {
+              type: 'string',
+              enum: ['low', 'medium', 'high', 'urgent'],
+              default: 'medium',
+              description: 'Priority level'
+            },
+            additionalDetails: {
+              type: 'string',
+              description: 'Optional additional information'
+            },
+            targetId: {
+              type: 'string',
+              description: 'ID of the specific item being reported'
+            },
+            trailId: {
+              type: 'string',
+              description: 'ID of the associated trail'
+            },
+            trailName: {
+              type: 'string',
+              description: 'Name of the trail for reference'
+            },
+            reporterId: {
+              type: 'string',
+              description: 'Firebase Auth UID of the user who submitted the report'
+            },
+            status: {
+              type: 'string',
+              enum: ['pending', 'reviewed', 'resolved', 'dismissed'],
+              default: 'pending',
+              description: 'Report status'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the report was created'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'When the report status was last updated'
+            },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Alternative timestamp field'
+            }
+          }
+        },
+        SuccessResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+              example: true
+            },
+            message: {
+              type: 'string',
+              example: 'Operation completed successfully'
+            }
+          }
+        },
+        Pagination: {
+          type: 'object',
+          properties: {
+            page: {
+              type: 'number',
+              example: 1,
+              description: 'Current page number'
+            },
+            limit: {
+              type: 'number',
+              example: 10,
+              description: 'Items per page'
+            },
+            total: {
+              type: 'number',
+              example: 100,
+              description: 'Total number of items'
+            },
+            pages: {
+              type: 'number',
+              example: 10,
+              description: 'Total number of pages'
             }
           }
         }

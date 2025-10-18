@@ -51,6 +51,7 @@ const corsOptions = {
     
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
       'http://localhost:3000',
+      'https://orion-sdp.web.app',
       'https://orion-api-qeyv.onrender.com'
     ];
     

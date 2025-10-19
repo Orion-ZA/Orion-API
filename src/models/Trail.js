@@ -150,7 +150,7 @@ class Trail {
 
   // Helper method to add GPS route point
   addGPSPoint(latitude, longitude) {
-    const errors = this.validateGeoPoint({ latitude, longitude });
+    const errors = Trail.validateGeoPoint({ latitude, longitude });
     if (errors.length === 0) {
       this.gpsRoute.push({ latitude, longitude });
     }

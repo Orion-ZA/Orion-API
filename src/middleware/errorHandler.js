@@ -1,4 +1,12 @@
 const errorHandler = (err, req, res, next) => {
+  // Handle null/undefined errors
+  if (!err) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server Error'
+    });
+  }
+
   let error = { ...err };
   error.message = err.message;
 
@@ -28,7 +36,7 @@ const errorHandler = (err, req, res, next) => {
 
   // Validation errors
   if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map(val => val.message).join(', ');
+    const message = err.errors && Object.values(err.errors).map(val => val.message).join(', ') || 'Validation error';
     error = { message, statusCode: 400 };
   }
 

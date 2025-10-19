@@ -74,9 +74,12 @@ const createTrailSchema = Joi.object({
     .messages({
       'any.only': 'Status must be one of: open, closed, maintenance, seasonal'
     }),
-  createdBy: Joi.string().pattern(/^[0-9a-fA-F]{24}$/)
+  createdBy: Joi.string().min(1).max(128).required()
     .messages({
-      'string.pattern.base': 'Invalid user ID format'
+      'string.empty': 'User ID is required',
+      'string.min': 'User ID must be at least 1 character',
+      'string.max': 'User ID cannot exceed 128 characters',
+      'any.required': 'User ID is required'
     })
 });
 

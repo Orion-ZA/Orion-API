@@ -1,8 +1,90 @@
 const request = require('supertest');
-const app = require('../src/app');
+
+// Mock the app to avoid port conflicts
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+require('dotenv').config();
+
+const { connectDB } = require('../src/config/database');
+const trailRoutes = require('../src/routes/trailRoutes');
+const userRoutes = require('../src/routes/userRoutes');
+const alertRoutes = require('../src/routes/alertRoutes');
+const reviewRoutes = require('../src/routes/reviewRoutes');
+const reportRoutes = require('../src/routes/reportRoutes');
+const errorHandler = require('../src/middleware/errorHandler');
+
+// Create test app without starting server
+const createTestApp = () => {
+  const app = express();
+
+  // Security middleware
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+  }));
+  app.use(compression());
+
+  // Rate limiting (more lenient for tests)
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 1000, // Higher limit for tests
+    message: 'Too many requests from this IP, please try again later.'
+  });
+  app.use('/api/', limiter);
+
+  // CORS configuration
+  app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
+  }));
+
+  // Logging (minimal for tests)
+  app.use(morgan('combined'));
+
+  // Body parsing middleware
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+  // Health check endpoints
+  app.get('/health', (req, res) => {
+    res.status(200).json({
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime()
+    });
+  });
+
+  // API routes
+  app.use('/api/trails', trailRoutes);
+  app.use('/api/users', userRoutes);
+  app.use('/api/alerts', alertRoutes);
+  app.use('/api/reviews', reviewRoutes);
+  app.use('/api/reports', reportRoutes);
+
+  // 404 handler
+  app.use('*', (req, res) => {
+    res.status(404).json({
+      success: false,
+      message: 'Route not found'
+    });
+  });
+
+  // Error handling middleware
+  app.use(errorHandler);
+
+  return app;
+};
+
+const app = createTestApp();
 
 describe('Trail API', () => {
-  // Test data
+  // Test data with proper MongoDB ObjectId format
   const testTrail = {
     name: 'Test Mountain Trail',
     location: {
@@ -20,10 +102,27 @@ describe('Trail API', () => {
     description: 'A beautiful test trail with stunning mountain views and forest paths.',
     photos: ['https://example.com/photo1.jpg'],
     status: 'open',
-    createdBy: 'test-user-123'
+    createdBy: global.generateFirebaseUserId() // Valid Firebase user ID format
   };
 
   let createdTrailId;
+
+  // Setup and teardown
+  beforeAll(async () => {
+    // Set test environment
+    process.env.NODE_ENV = 'test';
+    // Connect to database for tests
+    try {
+      await connectDB();
+    } catch (error) {
+      console.warn('Database connection failed in tests:', error.message);
+    }
+  });
+
+  afterAll(async () => {
+    // Clean up any test data if needed
+    // Note: In a real test environment, you'd want to clean up test data
+  });
 
   describe('POST /api/trails', () => {
     it('should create a new trail', async () => {
@@ -45,7 +144,12 @@ describe('Trail API', () => {
         location: {
           latitude: 200, // Invalid: latitude out of range
           longitude: -74.0060
-        }
+        },
+        distance: 5.2,
+        elevationGain: 800,
+        difficulty: 'Moderate',
+        description: 'Test description',
+        createdBy: global.generateFirebaseUserId()
       };
 
       const response = await request(app)
